@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "wsl-tools"
+version = "0.1.0"
+description = "WSL utilities library"
+authors = ["Andrea Ghensi"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+cached-property = "^1.5.2"
+pyxdg = "^0.27"
+
+[tool.poetry.dev-dependencies]
+pre-commit = "^2.9.3"
+black = "^20.8b1"
+pytest = "^6.1.2"
+coverage = "^5.3"
+mypy = "^0.790"
+pytest-cov = "^2.10.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.paths]
+source = ["src", "*/site-packages"]
+
+[tool.coverage.run]
+branch = true
+source = ["wsl_tools"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 100
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING",
+    "if __name__ == .__main__.:"
+]
+
+[tool.black]
+line-length = 80
