@@ -1,0 +1,23 @@
+name: Test
+
+on: [release]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.7"
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: 1.1.4
+      - name: Install dependencies
+        run: poetry install
+      - name: Build documentation
+        run: poetry run portray on_github_pages
