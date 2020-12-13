@@ -17,8 +17,8 @@ It also has a few helper methods/properties to check if `wsl` is installed and i
 This class does the heavy lifting.
 
 It mainly calls subprocess to run `wsl ~ -d distro-name sh -lc '....'`.
-Running the commands via `sh -lc` gives us a broader distribution support, 
-and ensures that we can use and edit the user .profile file. 
+Running the commands via `sh -lc` gives us a broader distribution support,
+and ensures that we can use and edit the user .profile file.
 
 ### WSLApp
 
