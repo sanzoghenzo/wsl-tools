@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Type checking
-        run: poetry run mypy src/wsl_tools.py
+        run: poetry run mypy src/wsl_tools
       - name: Test with pytest
         run: poetry run pytest --cov=./ --cov-report=xml
       - name: Upload coverage to Codecov

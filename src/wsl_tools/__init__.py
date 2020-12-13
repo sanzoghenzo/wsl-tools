@@ -1,4 +1,4 @@
-"""wsl-tools - hany classes for Windows Subsystem for Linux management."""
+"""wsl-tools - handy classes for Windows Subsystem for Linux management."""
 from __future__ import annotations
 
 import csv
@@ -6,7 +6,6 @@ import re
 import shutil
 import subprocess
 import time
-from collections import UserDict
 from dataclasses import dataclass
 from pathlib import Path
 from pathlib import PurePosixPath
@@ -17,15 +16,29 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 
-from cached_property import cached_property
 from xdg.DesktopEntry import DesktopEntry
 
+try:
+    from functools import cached_property  # type: ignore
+except ImportError:
+    from .cached_property import cached_property
+
+
 WSL_EXE = "wsl.exe"
+"""Base WSL executable."""
 
 
 @dataclass
 class WSLApp:
-    """WSL Application."""
+    """
+    WSL Application.
+
+    Attributes:
+        name: name of the application
+        generic_name: generic application name
+        cmd: command to launch the application
+        ico: application icon
+    """
 
     name: str
     generic_name: str
@@ -33,11 +46,14 @@ class WSLApp:
     gui: bool
     ico: Optional[str] = None
 
-    # distro: WSLDistro
-
     @classmethod
-    def from_dotdesktop(cls, app_def: Path) -> Optional["WSLApp"]:
-        """Return a WSLApp from a .desktop file."""
+    def from_dotdesktop(cls, app_def: Path) -> Optional[WSLApp]:
+        """
+        Return a WSLApp from a .desktop file.
+
+        Args:
+            app_def: .desktop file path
+        """
         # TODO: handle symlinks... need to run commands inside WSL
         de = DesktopEntry(app_def)
         name = de.getName()
@@ -52,12 +68,16 @@ class WSLApp:
 
 @dataclass
 class WSLDistro:
-    """WSL distribution handler."""
+    """
+    WSL distribution handler.
+
+    Attributes:
+        name: distribution name
+        version: WSL version
+    """
 
     name: str
     version: int
-
-    # manager: WSLManager = None
 
     def __str__(self) -> str:
         """Friendlier WSL name."""
@@ -80,16 +100,14 @@ class WSLDistro:
         self,
         command: str,
         load_profile: bool = False,
-        background: bool = False,
         **kwargs: Any,
-    ) -> Any:
+    ) -> subprocess.CompletedProcess[str]:
         """
         Run a bash command in the distro.
 
         Args:
             command: command to run in the WSL distro.
             load_profile: load .profile before running the command.
-            background: run the process in the background using Popen.
             kwargs: arguments to pass to the subprocess function.
 
         Returns:
@@ -97,16 +115,38 @@ class WSLDistro:
         """
         login = "l" if load_profile else ""
         command = f"sh -c{login} '{command}'"
-        run = subprocess.Popen if background else subprocess.run
-        return run(f"{self._cmd_base} {command}", **kwargs)
+        return subprocess.run(f"{self._cmd_base} {command}", **kwargs)
+
+    def run_background_command(
+        self,
+        command: str,
+        load_profile: bool = False,
+        **kwargs: Any,
+    ) -> subprocess.Popen[Any]:
+        """
+        Run a bash command in the distro as a background command.
+
+        Use Popen to launch the process.
+
+        Args:
+            command: command to run in the WSL distro.
+            load_profile: load .profile before running the command.
+            kwargs: arguments to pass to the subprocess function.
+
+        Returns:
+            The result of the subprocess call.
+        """
+        login = "l" if load_profile else ""
+        command = f"sh -c{login} '{command}'"
+        return subprocess.Popen(f"{self._cmd_base} {command}", **kwargs)
 
     def get_cmd_output(self, cmd: str, **kwargs: Any) -> str:
         """
-        Return the text output of a command run in the distro.
+        Run a command in the distro and return the stdout output as text.
 
         Args:
             cmd: commmand to run in the WSL distro.
-            kwargs: arguments to pass to subprocess.run
+            kwargs: arguments to pass to subprocess.Popen
 
         Returns:
             command output.
@@ -116,7 +156,6 @@ class WSLDistro:
             check=True,
             stdout=subprocess.PIPE,
             text=True,
-            background=False,
             **kwargs,
         )
         return run.stdout
@@ -127,12 +166,24 @@ class WSLDistro:
         )
 
     def read_file(self, path: str) -> str:
-        """Read the content of the file."""
+        """
+        Read the content of the file.
+
+        Args:
+            path: unix path of the file to read
+
+        Returns:
+            contents of the file.
+        """
         return self._unc_path_from_cmd(path).read_text()
 
     @cached_property
     def ip(self) -> str:
-        """Return the IP assigned to this distro."""
+        """
+        Return the IP assigned to this distro.
+
+        Extract the IP from the `/etc/resolv.conf` `nameserver` entry.
+        """
         for line in self.read_file("/etc/resolv.conf").splitlines():
             if "nameserver" in line:
                 return line.split()[1]
@@ -159,13 +210,13 @@ class WSLDistro:
         try:
             return self._unc_path_from_cmd("~/.profile")
         except subprocess.CalledProcessError:
-            return self.home_unc_path / ".profile"
+            return self.home_unc_path / ".profile"  # type: ignore
 
     @property
     def profile(self) -> str:
-        """Bash .profile contents."""
+        """User .profile contents."""
         try:
-            return self.profile_unc_path.read_text()
+            return self.profile_unc_path.read_text()  # type: ignore
         except FileNotFoundError:
             return ""
 
@@ -204,7 +255,7 @@ class WSLDistro:
 
     @property
     def theme(self) -> str:
-        """GTK theme."""
+        """Get/set the GTK theme name stored in user profile."""
         try:
             theme_line = next(
                 line
@@ -246,11 +297,11 @@ class WSLDistro:
             home / ".local" / "share" / "themes",
             home / ".themes",
         )
-        return list(get_themes(folders_to_check))
+        return list(_get_themes(folders_to_check))
 
     @cached_property
     def apps(self) -> Dict[str, WSLApp]:
-        """List of apps with a desktop entry."""
+        """Container of apps with a desktop entry."""
         app_dir = self.root_unc_path / "usr" / "share" / "applications"
         apps = {}
         for app in app_dir.glob("**/*.desktop"):
@@ -308,7 +359,7 @@ class WSLDistro:
     # TODO: dbus is only on debian based distro, handle init.d alternatives
     def start_dbus(self, sudo_password: str) -> None:
         """Ensure DBUS is running."""
-        v = self.run_command("/etc/init.d/dbus start", background=True)
+        v = self.run_background_command("/etc/init.d/dbus start")
         if "system message bus already started" in str(v.stdout):
             return
         self.run_sudo("/etc/init.d/dbus start", sudo_password)
@@ -326,7 +377,7 @@ class WSLDistro:
             self.profile = f"{profile}\nsudo /etc/init.d/dbus start\n"
 
 
-def get_themes(themes_dirs: Sequence[Path]) -> Iterator[str]:
+def _get_themes(themes_dirs: Sequence[Path]) -> Iterator[str]:
     """
     Return the names of the themes installed in the given directories.
 
@@ -336,32 +387,52 @@ def get_themes(themes_dirs: Sequence[Path]) -> Iterator[str]:
     for themes_dir in themes_dirs:
         if not themes_dir.exists():
             continue
-        for path in subdirs(themes_dir):
-            for subpath in subdirs(path):
+        for path in _subdirs(themes_dir):
+            for subpath in _subdirs(path):
                 if "gtk-" in subpath.name:
                     yield path.name
                     break
 
 
-def subdirs(base_dir: Path) -> Iterator[Path]:
+def _subdirs(base_dir: Path) -> Iterator[Path]:
     """Return the subdirectories inside the given directory."""
     return (p for p in base_dir.iterdir() if p.is_dir())
 
 
-class WSLManager(UserDict[str, WSLDistro]):
-    """Manager for the installed distributions."""
+class WSLManager:
+    """
+    Manager for the installed distributions.
+
+    It is a user dictionary with the distribution names as keys, and the
+    related WSLDistro object as value.
+
+    Args:
+        blacklist: list of distributions to ignore. Contains docker by default.
+    """
 
     def __init__(self, blacklist: Optional[List[str]] = None) -> None:
-        super().__init__()
+        self._distros: Dict[str, WSLDistro] = {}
         if not self.installed:
             # TODO: try to install it automatically
             raise FileNotFoundError("Cannot find wsl, install it first.")
         self._blacklist = blacklist or ["docker"]
         self._get_machines()
 
+    def __getitem__(self, item: str) -> WSLDistro:
+        """Return the WSLDistro with the specified name."""
+        return self._distros[item]
+
+    def __iter__(self) -> Iterator[str]:
+        """Iterates through the distribution dictionary."""
+        return iter(self._distros)
+
+    def __len__(self) -> int:
+        """Number of distributions installed."""
+        return len(self._distros)
+
     def refresh(self) -> None:
         """Refresh the dictionary of distributions."""
-        self.data.clear()
+        self._distros.clear()
         self._get_machines()
 
     def _get_machines(self) -> None:
@@ -376,14 +447,14 @@ class WSLManager(UserDict[str, WSLDistro]):
         for machine in reader:
             name = machine.get("NAME")
             if name and all(b not in name for b in self._blacklist):
-                self.data[name] = WSLDistro(
+                self._distros[name] = WSLDistro(
                     name, int(machine.get("VERSION", 1))
                 )
 
     @property
     def names(self) -> List[str]:
         """List of available WSL machine names."""
-        return list(self.data.keys())
+        return list(self._distros.keys())
 
     @property
     def installed(self) -> bool:
@@ -413,5 +484,5 @@ class WSLManager(UserDict[str, WSLDistro]):
         subprocess.run(
             f"{WSL_EXE} --import {name} {workdir} {tarball} --version {version}"
         )
-        self.data[name] = WSLDistro(name, version)
-        return self.data[name]
+        self._distros[name] = WSLDistro(name, version)
+        return self._distros[name]

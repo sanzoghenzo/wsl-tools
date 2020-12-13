@@ -7,7 +7,6 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-cached-property = "^1.5.2"
 pyxdg = "^0.27"
 
 [tool.poetry.dev-dependencies]
@@ -17,6 +16,7 @@ pytest = "^6.1.2"
 coverage = "^5.3"
 mypy = "^0.790"
 pytest-cov = "^2.10.1"
+portray = "^1.4.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -40,3 +40,11 @@ exclude_lines = [
 
 [tool.black]
 line-length = 80
+
+[tool.portray]
+modules = ["wsl_tools"]
+
+[[tool.portray.mkdocs.nav]]
+Home = "README.md"
+[[tool.portray.mkdocs.nav]]
+Contributing = "CONTRIBUTING.md"

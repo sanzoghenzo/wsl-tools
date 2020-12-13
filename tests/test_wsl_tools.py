@@ -40,7 +40,6 @@ def test_manager_names(manager: WSLManager) -> None:
 
 def test_manager_dict(manager: WSLManager) -> None:
     """Docker distros are blacklisted."""
-    assert len(manager) > 0
     assert all("docker" not in name for name in manager)
     assert BASE_DISTRO not in manager
 

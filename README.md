@@ -2,26 +2,27 @@
 
 Handy classes for WSL management.
 
-Inspired by [GWSL](https://opticos.github.io/gwsl/), a great work from [Pololot64](https://github.com/Pololot64)
+Inspired by [GWSL](https://opticos.github.io/gwsl/),
+a great work from [Pololot64](https://github.com/Pololot64),
+this project is a wrapper around the WSL executable to:
 
-## Classes
+- check if WSL is installed;
+- list and access the installed distribution;
+- import new distribution from tarball files;
+- run commands inside a distribution;
+- read and set known environment variables in the user `.profile`;
+- get the installed apps (that have a .desktop entry).
 
-### WSLManager
+```python
 
-`UserDict` that holds the installed WSL distributions.
+from wsl_tools import wsl_tools
 
-It also has a few helper methods/properties to check if `wsl` is installed and import distributions from tarball files.
+manager = wsl_tools.WSLManager()
 
-### WSLDistro
+```
 
-This class does the heavy lifting.
+For more information read the reference documentation.
 
-It mainly calls subprocess to run `wsl ~ -d distro-name sh -lc '....'`.
-Running the commands via `sh -lc` gives us a broader distribution support,
-and ensures that we can use and edit the user .profile file.
+## contributing
 
-### WSLApp
-
-Object holding the information found in the distro installed apps that have a xdg Desktop Entry.
-
-It doesn't do much at the time.
+Contributions are welcome! See [contributing](CONTRIBUTING.md).
