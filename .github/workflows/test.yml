@@ -20,31 +20,14 @@ jobs:
         with:
           #   python-version: ${{ matrix.python-version }}
           python-version: 3.7
-      - name: Install poetry
-        uses: snok/install-poetry@v1.1.1
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-      - name: Load cached venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v2
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2.1.0
       - name: Install dependencies
-        run: |
-          source $VENV
-          poetry install
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install
       - name: Type checking
-        run: |
-          source $VENV
-          poetry run mypy src/wsl_tools
-
+        run: poetry run mypy src/wsl_tools
 #      - name: Test with pytest
-#        run: |
-#            source $VENV
-#            poetry run pytest --cov=./ --cov-report=xml
+#        run: poetry run pytest --cov=./ --cov-report=xml
 #      - name: Upload coverage to Codecov
 #        uses: codecov/codecov-action@v1
 #        with:
