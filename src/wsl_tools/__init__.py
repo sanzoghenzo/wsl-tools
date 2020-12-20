@@ -62,7 +62,6 @@ class WSLApp:
         icon = de.getIcon()
         if name:
             return cls(name, generic_name, cmd, gui, icon)
-        
         else:
             # This is a symlink
             linux_path = str(app_def)[str(app_def).index(r"\\wsl$") + 7:]
@@ -79,7 +78,6 @@ class WSLApp:
             icon = de.getIcon()
             if name:
                 return cls(name, generic_name, cmd, gui, icon)
-        
         return None
 
 
