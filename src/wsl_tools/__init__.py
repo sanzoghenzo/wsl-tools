@@ -47,14 +47,13 @@ class WSLApp:
     ico: Optional[str] = None
 
     @classmethod
-    def from_dotdesktop(cls, app_def: Path) -> Optional[WSLApp]:
+    def from_dotdesktop(cls, app_def: Path, distro: WSLDistro) -> Optional[WSLApp]:
         """
         Return a WSLApp from a .desktop file.
 
         Args:
             app_def: .desktop file path
         """
-        # TODO: handle symlinks... need to run commands inside WSL
         de = DesktopEntry(app_def)
         name = de.getName()
         generic_name = de.getGenericName()
@@ -63,6 +62,24 @@ class WSLApp:
         icon = de.getIcon()
         if name:
             return cls(name, generic_name, cmd, gui, icon)
+        
+        else:
+            # This is a symlink
+            linux_path = str(app_def)[str(app_def).index(r"\\wsl$") + 7:]
+            linux_path = linux_path[linux_path.index("\\"):].replace("\\", "/")
+            # Turn symlink target into Windows Path
+            symlink = distro.get_cmd_output(f"readlink -f -e '{linux_path}'")
+            app_def = distro._unc_path_from_cmd(symlink)
+            
+            de = DesktopEntry(app_def)
+            name = de.getName()
+            generic_name = de.getGenericName()
+            cmd = de.getExec()
+            gui = not de.getTerminal()
+            icon = de.getIcon()
+            if name:
+                return cls(name, generic_name, cmd, gui, icon)
+        
         return None
 
 
@@ -305,7 +322,7 @@ class WSLDistro:
         app_dir = self.root_unc_path / "usr" / "share" / "applications"
         apps = {}
         for app in app_dir.glob("**/*.desktop"):
-            wsl_app = WSLApp.from_dotdesktop(app)
+            wsl_app = WSLApp.from_dotdesktop(app, self)
             if wsl_app:
                 apps[wsl_app.name] = wsl_app
         return apps
