@@ -15,6 +15,7 @@ from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Union
 
 from xdg.DesktopEntry import DesktopEntry
 
@@ -54,7 +55,6 @@ class WSLApp:
         Args:
             app_def: .desktop file path
         """
-        # TODO: handle symlinks... need to run commands inside WSL
         de = DesktopEntry(app_def)
         name = de.getName()
         generic_name = de.getGenericName()
@@ -63,7 +63,7 @@ class WSLApp:
         icon = de.getIcon()
         if name:
             return cls(name, generic_name, cmd, gui, icon)
-        return None
+        raise IOError("Cannot read the .desktop entry")
 
 
 @dataclass
@@ -305,9 +305,13 @@ class WSLDistro:
         app_dir = self.root_unc_path / "usr" / "share" / "applications"
         apps = {}
         for app in app_dir.glob("**/*.desktop"):
-            wsl_app = WSLApp.from_dotdesktop(app)
-            if wsl_app:
-                apps[wsl_app.name] = wsl_app
+            try:
+                wsl_app = WSLApp.from_dotdesktop(app)
+            except IOError:
+                wsl_app = WSLApp.from_dotdesktop(
+                    self._unc_path_from_cmd(wsl_posix_path(app))
+                )
+            apps[wsl_app.name] = wsl_app
         return apps
 
     @cached_property
@@ -399,6 +403,22 @@ def _subdirs(base_dir: Path) -> Iterator[Path]:
     return (p for p in base_dir.iterdir() if p.is_dir())
 
 
+def wsl_posix_path(unc_path: Path) -> str:
+    r"""
+    Return the WSL posix path of a UNC path.
+
+    It is basically the POSIX path of the original path
+    without the `\\swl$\distro-name` at the beginning.
+
+    Args:
+        unc_path: UNC path of the file inside the WSL distro
+
+    Returns:
+        the POSIX path of the file.
+    """
+    return str(PurePosixPath("/", *unc_path.parts[1:]))
+
+
 class WSLManager:
     """
     Manager for the installed distributions.
@@ -467,7 +487,11 @@ class WSLManager:
     #     raise NotImplementedError
 
     def import_distro(
-        self, name: str, tarball: str, workdir: str, version: int = 2
+        self,
+        name: str,
+        tarball: str,
+        workdir: Union[Path, str],
+        version: int = 2,
     ) -> WSLDistro:
         """
         Import a distribution from a tarball file.

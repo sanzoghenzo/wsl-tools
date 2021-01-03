@@ -3,8 +3,11 @@ import ipaddress
 from pathlib import Path
 
 import pytest
+from wsl_tools import wsl_posix_path
+from wsl_tools import WSLApp
 from wsl_tools import WSLDistro
 from wsl_tools import WSLManager
+from xdg.Exceptions import ParsingError
 
 BASE_DISTRO = "alpine-base"
 
@@ -23,6 +26,41 @@ def test_distro(tmp_path_factory, manager: WSLManager) -> WSLDistro:
     distro = manager.import_distro(BASE_DISTRO, tarfile, distro_dir)
     yield distro
     distro.remove()
+
+
+@pytest.fixture
+def dotdesktop_path(tmp_path_factory) -> Path:
+    """Temporary file."""
+    dd_folder = tmp_path_factory.mktemp("dotdesktop_files")
+    dd_path = dd_folder / "text.desktop"
+    yield dd_path
+    dd_path.unlink()
+
+
+def test_app_from_dotdesktop(dotdesktop_path: Path) -> None:
+    """Dotdesktop file is translated into a WSLApp."""
+    dotdesktop_path.write_text(
+        """[Desktop Entry]
+Name=Test app
+GenericName=Generic test
+Exec=/bin/test
+Icon=awesome
+Terminal=True
+Type=Application
+Categories=GTK;GNOME;Utility;
+    """
+    )
+    app = WSLApp.from_dotdesktop(dotdesktop_path)
+    assert app == WSLApp(
+        "Test app", "Generic test", "/bin/test", False, ico="awesome"
+    )
+
+
+def test_app_from_dotdesktop_inalid(dotdesktop_path: Path) -> None:
+    """Raise on empty or invalid file."""
+    dotdesktop_path.write_text("")
+    with pytest.raises(ParsingError):
+        WSLApp.from_dotdesktop(dotdesktop_path)
 
 
 def test_manager_wsl_installed(manager: WSLManager) -> None:
@@ -56,6 +94,14 @@ def test_manager_dict_distro_imported(
     """Imported distro appears in the manager."""
     assert BASE_DISTRO in manager
     assert manager[BASE_DISTRO].version == 2
+    assert len(manager) >= 1
+
+
+def test_manager_refresh(manager: WSLManager, test_distro: WSLDistro) -> None:
+    """Imported distro appears in the manager."""
+    names = set(manager.names)
+    manager.refresh()
+    assert names == set(manager.names)
 
 
 def test_distro_name_and_repr(test_distro: WSLDistro) -> None:
@@ -142,3 +188,14 @@ def test_qt_scale(test_distro: WSLDistro) -> None:
     assert "export QT_SCALE_FACTOR=2" in test_distro.profile
     with pytest.raises(ValueError):
         test_distro.qt_scale = 3
+
+
+wsl_posix_path_args = [
+    (r"\\wsl$\Ubuntu-20.04\home\test\whatever", "/home/test/whatever")
+]
+
+
+@pytest.mark.parametrize(("unc", "expected"), wsl_posix_path_args)
+def test_wsl_posix_path(unc: str, expected: str) -> None:
+    """UNC path converted to linux path."""
+    assert wsl_posix_path(Path(unc)) == expected
