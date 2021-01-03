@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import time
 from dataclasses import dataclass
+from dataclasses import field
 from pathlib import Path
 from pathlib import PurePosixPath
 from typing import Any
@@ -78,6 +79,7 @@ class WSLDistro:
 
     name: str
     version: int
+    _profile: Optional[str] = field(default=None, init=False)
 
     def __str__(self) -> str:
         """Friendlier WSL name."""
@@ -215,14 +217,17 @@ class WSLDistro:
     @property
     def profile(self) -> str:
         """User .profile contents."""
-        try:
-            return self.profile_unc_path.read_text()  # type: ignore
-        except FileNotFoundError:
-            return ""
+        if self._profile is None:
+            try:
+                self._profile = self.profile_unc_path.read_text()
+            except FileNotFoundError:
+                self._profile = ""
+        return self._profile
 
     @profile.setter
     def profile(self, value: str) -> None:
         """Writes the value into the user profile."""
+        self._profile = value
         self.profile_unc_path.write_text(value)
 
     def reboot(self) -> None:
