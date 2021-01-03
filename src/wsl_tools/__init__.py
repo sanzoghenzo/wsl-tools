@@ -297,7 +297,7 @@ class WSLDistro:
             home / ".local" / "share" / "themes",
             home / ".themes",
         )
-        return list(_get_themes(folders_to_check))
+        return sorted(_get_themes(folders_to_check), key=str.casefold)
 
     @cached_property
     def apps(self) -> Dict[str, WSLApp]:
