@@ -49,7 +49,7 @@ class WSLApp:
     ico: Optional[str] = None
 
     @classmethod
-    def from_dotdesktop(cls, app_def: Path) -> Optional[WSLApp]:
+    def from_dotdesktop(cls, app_def: Path) -> WSLApp:
         """
         Return a WSLApp from a .desktop file.
 
