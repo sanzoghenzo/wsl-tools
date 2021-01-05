@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wsl-tools"
-version = "0.1.0"
+version = "0.1.1"
 description = "WSL utilities library"
 authors = ["Andrea Ghensi"]
 license = "MIT"
@@ -48,3 +48,9 @@ modules = ["wsl_tools"]
 Home = "README.md"
 [[tool.portray.mkdocs.nav]]
 Contributing = "CONTRIBUTING.md"
+
+[tool.commitizen]
+version = "0.1.1"
+version_files = [
+    "pyproject.toml:version"
+]
