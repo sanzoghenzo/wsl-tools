@@ -246,17 +246,17 @@ class WSLDistro:
         """Run the commmand with sudo."""
         self.run_command(f"echo '{sudo_password}' | sudo -H -S {command}")
 
-    def open_in_shell(self, windows_terminal: bool) -> None:
-        """
-        Open the distro in a shell.
-
-        Args:
-            windows_terminal: if true, open the distro in windows terminal.
-        """
-        if windows_terminal:
-            subprocess.Popen(f"wt -p {self.name}")
-        else:
-            subprocess.Popen(f"{WSL_EXE} ~ -d {self.name}")
+    def open_in_shell(self) -> None:
+        """Open the distro in windows terminal, if installed, or cmd."""
+        p = subprocess.run(
+            f"wt -p {self.name}",
+            creationflags=subprocess.DETACHED_PROCESS,
+        )
+        if p.returncode:
+            subprocess.Popen(
+                f"cmd.exe /k {WSL_EXE} ~ -d {self.name}",
+                creationflags=subprocess.DETACHED_PROCESS,
+            )
 
     @property
     def theme(self) -> str:
