@@ -1,3 +1,9 @@
+## v0.2.1 (2021-01-06)
+
+### Fix
+
+- **shell**: open_in_shell doesn't open a window
+
 ## v0.2.0 (2021-01-05)
 
 ### Refactor
